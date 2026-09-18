@@ -1,0 +1,51 @@
+/**
+ * 全局样式。
+ *
+ * 刻意不引入 Tailwind / UI 组件库：这个项目要展示的是"我理解布局与状态渲染"，
+ * 而不是"我会用某个组件库"。样式集中用 CSS 变量声明，主题切换只改变量即可。
+ *
+ * 颜色语义与后端状态口径对齐（见 ResultView 的 STATUS_META）：
+ *   绿 = 正常完成 / 琥珀 = 降级或待确认 / 红 = 失败或需人工介入
+ */
+
+:root {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f7f7f5;
+  --color-text-primary: #1f1f1e;
+  --color-text-secondary: #6b6a66;
+  --color-text-tertiary: #9a9893;
+  --color-border-tertiary: rgba(0, 0, 0, 0.12);
+  --color-border-secondary: rgba(0, 0, 0, 0.24);
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
+    'Hiragino Sans GB', sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* 可访问性：键盘导航时焦点可见（鼠标点击不显示外框） */
+:focus-visible {
+  outline: 2px solid #534ab7;
+  outline-offset: 2px;
+}

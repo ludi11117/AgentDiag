@@ -1,0 +1,27 @@
+[server]
+# 绑定所有网卡，局域网内其他设备才能访问（默认是 localhost，只有本机能访问）
+address = "0.0.0.0"
+port = 8501
+headless = true
+# 关闭 CORS / XSRF 校验，让局域网或隧道（ngrok）访问不被浏览器拦下。
+#
+# ⚠️ 安全代价：这两项是 Streamlit 的默认防护，关掉后任何能访问到 8501 端口的人
+#    都能直接操作前端，且无法通过 CSRF 防护区分请求来源。
+#    因此它们只在"内网 + 自己人"的场景下可以接受。
+#
+# 公网部署前必须做三件事中的至少一件：
+#   1) 去掉本文件里的两行，恢复默认（enableCORS=true / enableXsrfProtection=true）；
+#      若你走反向代理或内网穿透，恢复后可能需要给代理配置 XSRF 相关头，请先在测试环境验证。
+#   2) 在 Streamlit 前面加一层带认证的反向代理（nginx + basic auth / OAuth）。
+#   3) 只用 API（8000 端口）对外，并设置 .env 里的 API_KEY。
+#
+# 注意：API 侧的可选鉴权（API_KEY）已生效，但它**保护不了 Streamlit 前端**——
+#       两者是不同进程、不同端口，不要混淆。
+enableCORS = false
+enableXsrfProtection = false
+# 关闭文件监听：Windows 下显著减少启动与运行开销
+fileWatcherType = "none"
+runOnSave = false
+
+[browser]
+gatherUsageStats = false

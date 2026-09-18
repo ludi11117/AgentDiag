@@ -1,0 +1,75 @@
+# ===== 环境与密钥 =====
+.env
+.env.*
+!.env.example
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# ===== 测试与工具缓存 =====
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ===== 虚拟环境 =====
+venv/
+.venv/
+env/
+ENV/
+
+# ===== 运行期数据（数据库 / 向量库 / 日志）=====
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+chroma_db/
+eval_reports/
+*.log
+
+# ===== IDE / 系统文件 =====
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ===== 本地 AI 助手工作区（含会话记忆，不应进公开仓库）=====
+.workbuddy-ai/
+
+# ===== 恢复用的临时备份 =====
+.recovery/
+
+# ===== 作者本地的学习材料（不属于项目产物，不进公开仓库）=====
+AgentDiag-代码全解.html
+
+# ===== 工具脚本的生成物（每次跑都不一样，不入库）=====
+# tools/trace_diagnosis.py --json
+trace_report.json
+# tools/explain_retrieval.py --json
+retrieval_explain.json
+# tools/parse_manual_pdf.py --json
+manual_parse_report.json
+
+# ===== 前端（web/）=====
+# 依赖与构建产物不入库；源码与配置全部入库
+web/node_modules/
+web/dist/
+web/.vite/
+web/*.local
+web/.env.local
+
+# 损坏的 git 目录（恢复期间保留，不进库）
+.git_corrupted_*/
+
+# ===== 厂家手册原文（**受版权保护，绝不能进公开仓库**）=====
+# data/raw/ 放的是从厂家官网下载的 PDF；内容版权归原厂所有。
+# 这里只做本地可行性评估，不随仓库分发。复现方式见 docs/真实数据来源.md。
+data/raw/

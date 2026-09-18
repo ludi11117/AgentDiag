@@ -1,0 +1,29 @@
+services:
+  flawscope:
+    build: .
+    container_name: flawscope
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # 把 SQLite 放进"被挂载的目录"里，而不是单独挂载一个 .db 文件。
+      # 单文件挂载有两个坑：
+      #   ① 宿主机上该文件不存在时，Docker 会创建一个同名**目录**，SQLite 直接打不开；
+      #   ② WAL 模式会生成 -wal / -shm 伴生文件，单文件挂载留不住它们，
+      #      重启后可能丢事务，极端情况下还会损坏库文件。
+      - DB_PATH=/app/data/diagnosis_history.db
+    ports:
+      - "8000:8000"   # FastAPI
+      - "8501:8501"   # Streamlit
+    volumes:
+      - ./chroma_db:/app/chroma_db   # 向量库（需先在宿主机执行 build_knowledge_base.py）
+      - ./data:/app/data             # 知识库原文 + SQLite 诊断历史
+    healthcheck:
+      # 用 /health/live 而不是 /health：后者会真实调用 LLM 与 Embedding，
+      # 每 30s 一次的探活会持续烧配额。容器存活探针只该确认进程还在；
+      # 需要判断"上游模型是否可用"时手动访问 /health（有 60s 缓存）。
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

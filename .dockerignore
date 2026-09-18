@@ -1,0 +1,31 @@
+# Python 缓存与字节码
+__pycache__/
+*.pyc
+*.pyo
+
+# 虚拟环境
+venv/
+.venv/
+
+# 敏感配置：密钥不进镜像，运行时就交换机挂载
+.env
+.env.*
+
+# IDE / 系统文件
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 测试与评估脚本
+eval_test.py
+*.log
+
+# 早期原型脚本（已归档到 legacy/，不再随镜像分发）
+legacy/
+
+# 仓库元数据与静态检查配置（运行期用不到）
+.github/
+ruff.toml
+.pytest_cache/
+.workbuddy-ai/

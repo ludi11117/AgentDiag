@@ -1,0 +1,41 @@
+# FlawScope 全量依赖（运行时 + 开发/测试）
+# 版本与本地实测环境一致；Docker 使用 requirements-runtime.txt（同版本，去掉开发依赖）
+# 说明：向量库统一使用官方独立包 langchain-chroma，
+#       已弃用的 langchain-community 不再依赖。
+
+# ===== LLM / Agent 编排 =====
+langchain-openai==1.5.1
+langchain-core==1.5.5
+langchain-chroma==1.1.0
+langchain-text-splitters==1.1.2
+langgraph==1.2.11
+openai==3.1.0
+tiktoken==0.13.0
+
+# ===== 向量检索 =====
+chromadb==1.5.9
+rank-bm25==0.2.2
+
+# ===== 配置 / 日志 / 可靠性 =====
+pydantic==2.13.4
+pydantic-settings==2.15.0
+python-dotenv==1.2.2
+structlog==26.1.0
+tenacity==9.1.4
+jinja2==3.1.6
+
+# ===== 中文 NLP =====
+jieba==0.42.1
+
+# ===== Web / 前端 =====
+fastapi==0.141.1
+uvicorn==0.52.4
+streamlit==1.62.0
+pandas==3.0.5
+python-multipart==0.0.32
+httpx==0.28.1
+
+# ===== 开发 / 测试 =====
+requests==2.34.2
+pytest==9.1.1
+pytest-asyncio==1.4.0

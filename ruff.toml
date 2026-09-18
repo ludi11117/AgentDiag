@@ -1,0 +1,23 @@
+# Ruff 配置：静态检查（lint）。
+#
+# 规则集刻意保守：只启用**能确定性验证、且几乎不产生噪音**的规则，
+# 保证 CI 红灯永远指向真问题，而不是风格偏好。
+# 想加严时建议按这个顺序补，每加一档先跑 `ruff check . --statistics` 看量：
+#   E4（导入位置）→ I（导入排序）→ E5（行宽）→ UP（语法现代化）→ B/S（bugbear/安全）
+#
+# 注意：E4 目前会命中 agents.py 顶部"先 filterwarnings 再 import 重库"的有意写法
+#       （顺序反了会让 langchain 的导入告警重新冒出来），启用前需要先处理那几行。
+
+line-length = 120
+target-version = "py313"
+
+# 早期原型脚本已冻结，保持历史原样，不参与 lint
+extend-exclude = ["legacy", "venv", "chroma_db"]
+
+[lint]
+select = [
+    "E9",    # 语法错误（E999）
+    "F",     # Pyflakes：未使用导入/变量、未定义名、重复定义
+    "W291",  # 行尾空白
+    "W293",  # 空行内空白
+]
