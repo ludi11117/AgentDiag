@@ -114,34 +114,53 @@ export function HistoryPage() {
 
   const statuses = data?.statuses ?? []
 
+  // 状态分布概览：只统计后端返回的状态枚举，不额外请求
+  const distribution = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of records) map.set(r.status, (map.get(r.status) ?? 0) + 1)
+    return map
+  }, [records])
+
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px' }}>
-      <h1 style={{ fontSize: 15, fontWeight: 500, margin: '0 0 18px', color: 'var(--color-text-primary)' }}>
-        诊断历史
-      </h1>
+    <div style={{ maxWidth: 1120, margin: '0 auto', padding: '32px 24px 60px' }}>
+      <header style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: 21, fontWeight: 600, margin: 0, letterSpacing: -0.3 }}>
+          诊断历史
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '6px 0 0' }}>
+          每次诊断的结果、工单与追踪 ID 都落库在这里，可搜索、筛选、导出。
+        </p>
+      </header>
+
+      {/* 统计概览 */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        <StatCard label="记录总数" value={total} accent />
+        <StatCard label="本页状态种类" value={distribution.size} />
+        <StatCard label="当前页" value={`${win.page} / ${win.pageCount}`} />
+      </div>
 
       {/* 筛选栏 */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+      <div
+        className="fs-card"
+        style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap', padding: 13 }}
+      >
         <input
           value={keywordInput}
           onChange={(e) => setKeywordInput(e.target.value)}
           placeholder="搜索故障描述关键词，如：液压、E-203、主轴"
           style={{
             flex: '1 1 260px',
-            padding: '7px 11px',
+            padding: '8px 12px',
             fontSize: 13,
-            borderRadius: 8,
-            border: '0.5px solid var(--color-border-secondary)',
-            background: 'transparent',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--color-border-secondary)',
+            background: 'var(--color-background-primary)',
             color: 'var(--color-text-primary)',
             fontFamily: 'inherit',
+            outline: 'none',
           }}
         />
-        <select
-          value={status}
-          onChange={(e) => onStatusChange(e.target.value)}
-          style={selectStyle}
-        >
+        <select value={status} onChange={(e) => onStatusChange(e.target.value)} style={selectStyle}>
           <option value="">全部状态</option>
           {statuses.map((s) => (
             <option key={s} value={s}>
@@ -160,23 +179,45 @@ export function HistoryPage() {
             </option>
           ))}
         </select>
-        <button onClick={onExportCsv} disabled={records.length === 0} style={btnStyle(false, records.length === 0)}>
+        <button
+          onClick={onExportCsv}
+          disabled={records.length === 0}
+          style={btnStyle(false, records.length === 0)}
+        >
           导出当前页 CSV
         </button>
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 10 }}>
-        {loading ? '加载中…' : historySummary(total, records.length)}
-        {win.pageCount > 1 && ` · 第 ${win.page} / ${win.pageCount} 页`}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 12,
+          color: 'var(--color-text-secondary)',
+          marginBottom: 10,
+        }}
+      >
+        {loading ? (
+          <>
+            <span className="fs-spin" /> 加载中…
+          </>
+        ) : (
+          <>
+            {historySummary(total, records.length)}
+            {win.pageCount > 1 && ` · 第 ${win.page} / ${win.pageCount} 页`}
+          </>
+        )}
       </div>
 
       {error && (
         <div
+          className="fs-banner"
           style={{
-            padding: '9px 12px',
-            borderRadius: 8,
-            background: '#FCEBEB',
-            border: '0.5px solid #A32D2D',
+            padding: '10px 13px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--danger-soft)',
+            border: '0.5px solid var(--danger)',
             color: '#791F1F',
             fontSize: 13,
             marginBottom: 12,
@@ -188,7 +229,36 @@ export function HistoryPage() {
 
       {/* 列表 */}
       {records.length > 0 ? (
-        <div style={{ border: '0.5px solid var(--color-border-tertiary)', borderRadius: 10, overflow: 'hidden' }}>
+        <div
+          style={{
+            background: 'var(--color-background-primary)',
+            border: '1px solid var(--color-border-tertiary)',
+            borderRadius: 'var(--radius-lg)',
+            overflow: 'hidden',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          {/* 表头：桌面端提供列语义，窄屏自动换行 */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '8px 13px',
+              background: 'var(--color-background-tertiary)',
+              borderBottom: '1px solid var(--color-border-tertiary)',
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: 'var(--color-text-secondary)',
+              letterSpacing: 0.3,
+            }}
+          >
+            <span style={{ width: 34 }}>ID</span>
+            <span style={{ width: 132 }}>时间</span>
+            <span style={{ width: 84 }}>状态</span>
+            <span style={{ flex: 1 }}>故障描述</span>
+            <span style={{ width: 16 }} />
+          </div>
           {records.map((r, i) => (
             <RecordRow
               key={r.id}
@@ -204,14 +274,18 @@ export function HistoryPage() {
         !loading && (
           <div
             style={{
-              padding: 28,
+              padding: 40,
               textAlign: 'center',
               fontSize: 13,
               color: 'var(--color-text-secondary)',
-              border: '0.5px solid var(--color-border-tertiary)',
-              borderRadius: 10,
+              background: 'var(--color-background-primary)',
+              border: '1px dashed var(--color-border-secondary)',
+              borderRadius: 'var(--radius-lg)',
             }}
           >
+            <div style={{ fontSize: 26, opacity: 0.3, marginBottom: 8 }} aria-hidden>
+              ▤
+            </div>
             {total > 0
               ? '当前页没有记录，请回到第 1 页查看。'
               : '没有符合条件的记录。先进行一次诊断，记录会自动保存。'}
@@ -221,14 +295,34 @@ export function HistoryPage() {
 
       {/* 翻页 */}
       {win.pageCount > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            marginTop: 18,
+          }}
+        >
           <button onClick={() => setPage(1)} disabled={win.page <= 1} style={btnStyle(false, win.page <= 1)}>
             首页
           </button>
-          <button onClick={() => setPage(win.page - 1)} disabled={win.page <= 1} style={btnStyle(false, win.page <= 1)}>
+          <button
+            onClick={() => setPage(win.page - 1)}
+            disabled={win.page <= 1}
+            style={btnStyle(false, win.page <= 1)}
+          >
             上一页
           </button>
-          <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', minWidth: 90, textAlign: 'center' }}>
+          <span
+            style={{
+              fontSize: 13,
+              color: 'var(--color-text-secondary)',
+              minWidth: 96,
+              textAlign: 'center',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
             第 {win.page} / {win.pageCount} 页
           </span>
           <button
@@ -247,6 +341,57 @@ export function HistoryPage() {
           </button>
         </div>
       )}
+
+      <style>{`
+        .fs-spin {
+          width: 9px; height: 9px; border-radius: 50%;
+          border: 1.5px solid var(--accent-border);
+          border-top-color: var(--accent);
+          display: inline-block; vertical-align: middle; margin-right: 6px;
+          animation: fs-rot 0.7s linear infinite;
+        }
+        @keyframes fs-rot { to { transform: rotate(360deg); } }
+      `}</style>
+    </div>
+  )
+}
+
+/** 概览统计卡 */
+function StatCard({
+  label,
+  value,
+  accent,
+}: {
+  label: string
+  value: React.ReactNode
+  accent?: boolean
+}) {
+  return (
+    <div
+      className="fs-card"
+      style={{
+        flex: '1 1 130px',
+        padding: '11px 14px',
+        background: accent
+          ? 'linear-gradient(135deg, #f1effb 0%, #e9e6f8 100%)'
+          : 'var(--color-background-primary)',
+        borderColor: accent ? 'var(--accent-border)' : 'var(--color-border-tertiary)',
+      }}
+    >
+      <div style={{ fontSize: 11.5, color: 'var(--color-text-secondary)', marginBottom: 2 }}>
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 20,
+          fontWeight: 600,
+          letterSpacing: -0.4,
+          color: accent ? 'var(--accent)' : 'var(--color-text-primary)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </div>
     </div>
   )
 }
@@ -274,36 +419,63 @@ function RecordRow({
   const hasWorkorder = !!wo.工单编号
 
   return (
-    <div style={{ borderBottom: isLast ? 'none' : '0.5px solid var(--color-border-tertiary)' }}>
+    <div
+      style={{ borderBottom: isLast ? 'none' : '0.5px solid var(--color-border-tertiary)' }}
+    >
       <div
         onClick={onToggle}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 12,
-          padding: '9px 13px',
+          padding: '10px 13px',
           cursor: 'pointer',
           background: isOpen ? 'var(--color-background-secondary)' : 'transparent',
           fontSize: 13,
+          transition: 'background var(--transition)',
+        }}
+        onMouseEnter={(e) => {
+          if (!isOpen) e.currentTarget.style.background = 'var(--color-background-secondary)'
+        }}
+        onMouseLeave={(e) => {
+          if (!isOpen) e.currentTarget.style.background = 'transparent'
         }}
       >
-        <span style={{ color: 'var(--color-text-tertiary)', minWidth: 34, fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+        <span
+          style={{
+            color: 'var(--color-text-tertiary)',
+            width: 34,
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11.5,
+          }}
+        >
           {record.id}
-        </span>
-        <span style={{ color: 'var(--color-text-secondary)', minWidth: 132, fontSize: 12 }}>
-          {formatTime(record.created_at)}
         </span>
         <span
           style={{
-            padding: '2px 8px',
-            borderRadius: 5,
-            background: meta.bg,
-            color: meta.color,
+            color: 'var(--color-text-secondary)',
+            width: 132,
             fontSize: 12,
-            whiteSpace: 'nowrap',
+            fontVariantNumeric: 'tabular-nums',
           }}
         >
-          {meta.label}
+          {formatTime(record.created_at)}
+        </span>
+        <span style={{ width: 84 }}>
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '2.5px 9px',
+              borderRadius: 20,
+              background: meta.bg,
+              color: meta.color,
+              fontSize: 11.5,
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {meta.label}
+          </span>
         </span>
         <span
           style={{
@@ -317,18 +489,29 @@ function RecordRow({
         >
           {record.fault_description}
         </span>
-        <span style={{ color: 'var(--color-text-tertiary)', fontSize: 12, minWidth: 16 }}>
-          {isOpen ? '▾' : '▸'}
+        <span
+          style={{
+            color: 'var(--color-text-tertiary)',
+            fontSize: 11,
+            width: 16,
+            transition: 'transform var(--transition)',
+            transform: isOpen ? 'rotate(90deg)' : 'none',
+            display: 'inline-block',
+          }}
+        >
+          ▸
         </span>
       </div>
 
       {isOpen && (
         <div
+          className="fs-rise"
           style={{
-            padding: '4px 13px 15px 59px',
+            padding: '10px 15px 15px 59px',
             background: 'var(--color-background-secondary)',
             fontSize: 13,
             lineHeight: 1.65,
+            borderTop: '0.5px solid var(--color-border-tertiary)',
           }}
         >
           <Field label="最终根因" value={rootCause} />
@@ -339,9 +522,9 @@ function RecordRow({
             <div
               style={{
                 marginTop: 8,
-                padding: '7px 10px',
-                borderRadius: 6,
-                background: '#FAEEDA',
+                padding: '8px 11px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--warning-soft)',
                 border: '0.5px solid #EF9F27',
                 color: '#412402',
               }}
@@ -353,14 +536,16 @@ function RecordRow({
 
           {/* 按需展开原始 JSON：默认收起，不必为看一个字段渲染 7 个 JSON 块 */}
           <details style={{ marginTop: 10 }}>
-            <summary style={{ cursor: 'pointer', fontSize: 12, color: 'var(--color-text-secondary)' }}>
+            <summary
+              style={{ cursor: 'pointer', fontSize: 12, color: 'var(--color-text-secondary)' }}
+            >
               查看完整数据（诊断 / 审核 / 辩论 / 成本 / 工单）
             </summary>
             <pre
               style={{
                 marginTop: 8,
-                padding: 11,
-                borderRadius: 6,
+                padding: 12,
+                borderRadius: 'var(--radius-sm)',
                 background: 'var(--color-background-primary)',
                 border: '0.5px solid var(--color-border-tertiary)',
                 fontSize: 11.5,
@@ -376,7 +561,11 @@ function RecordRow({
 
           <div style={{ display: 'flex', gap: 8, marginTop: 11 }}>
             {hasWorkorder && (
-              <a href={workorderUrl(record.id)} download style={{ ...btnStyle(true, false), textDecoration: 'none' }}>
+              <a
+                href={workorderUrl(record.id)}
+                download
+                style={{ ...btnStyle(true, false), textDecoration: 'none' }}
+              >
                 下载工单 Markdown
               </a>
             )}
@@ -395,7 +584,7 @@ function RecordRow({
             >
               导出 JSON
             </button>
-            <button onClick={onDelete} style={btnStyle(false, false, '#A32D2D')}>
+            <button onClick={onDelete} style={btnStyle(false, false, 'var(--danger)')}>
               删除
             </button>
           </div>
@@ -418,12 +607,11 @@ function Field({ label, value }: { label: string; value?: React.ReactNode }) {
 }
 
 const selectStyle = {
-  padding: '7px 10px',
+  padding: '8px 11px',
   fontSize: 13,
-  borderRadius: 8,
-  border: '0.5px solid var(--color-border-secondary)',
-  background: 'transparent',
+  borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--color-border-secondary)',
+  background: 'var(--color-background-primary)',
   color: 'var(--color-text-primary)',
   fontFamily: 'inherit',
 } as const
-

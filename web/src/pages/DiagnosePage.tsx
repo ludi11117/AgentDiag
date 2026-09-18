@@ -15,6 +15,26 @@ import { btnStyle } from '../ui/button'
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024
 
+/** 示例故障描述：新用户不知道该输入什么，直接给几条可点的样板 */
+const SAMPLES: { label: string; text: string }[] = [
+  {
+    label: '主轴异响发热',
+    text: '那台数控机床主轴转起来一顿一顿的，还有怪声，温度也高得离谱，摸着烫手',
+  },
+  {
+    label: '液压压力不足',
+    text: '液压站压力上不去，只有额定值的一半，动作明显没劲，油温偏高',
+  },
+  {
+    label: '空压机排气温度高',
+    text: '空压机运行半小时就报排气温度过高跳机，冷却器摸着挺烫的',
+  },
+  {
+    label: '设备不匹配（应降级）',
+    text: '我们食堂的洗碗机最近老是漏水，帮我看看什么原因',
+  },
+]
+
 export function DiagnosePage() {
   const { state, start, abort, reset, buildContext } = useDiagnosisStream()
   const [input, setInput] = useState('')
@@ -50,23 +70,47 @@ export function DiagnosePage() {
     !!state.result?.workorder?.工单编号 && !workorderRecordId && !state.result.followup_question
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '28px 24px' }}>
-      <header style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 15, fontWeight: 500, margin: 0, color: 'var(--color-text-primary)' }}>
-          FlawScope 故障诊断
+    <div style={{ maxWidth: 920, margin: '0 auto', padding: '32px 24px 60px' }}>
+      <header style={{ marginBottom: 22 }}>
+        <h1
+          style={{
+            fontSize: 21,
+            fontWeight: 600,
+            margin: 0,
+            letterSpacing: -0.3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 9,
+          }}
+        >
+          故障诊断
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              color: 'var(--accent)',
+              background: 'var(--accent-soft)',
+              border: '0.5px solid var(--accent-border)',
+              padding: '2px 8px',
+              borderRadius: 20,
+              letterSpacing: 0.2,
+            }}
+          >
+            多 Agent 协作
+          </span>
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '5px 0 0' }}>
-          多智能体协作 · 混合检索 · 辩论式审核
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '6px 0 0' }}>
+          用自然语言描述故障，系统自动完成检索、诊断、审核与工单生成；资料不足时会明确说明而不是编造。
         </p>
       </header>
 
       {/* 输入区 */}
       <div
+        className="fs-card"
         style={{
-          border: '0.5px solid var(--color-border-tertiary)',
-          borderRadius: 12,
-          padding: 15,
+          padding: 16,
           marginBottom: 18,
+          transition: 'border-color var(--transition), box-shadow var(--transition)',
         }}
       >
         <textarea
@@ -81,20 +125,63 @@ export function DiagnosePage() {
             border: 'none',
             outline: 'none',
             resize: 'vertical',
-            fontSize: 13,
-            lineHeight: 1.6,
+            fontSize: 14,
+            lineHeight: 1.65,
             fontFamily: 'var(--font-sans)',
             background: 'transparent',
             color: 'var(--color-text-primary)',
           }}
         />
 
+        {/* 示例快捷入口：只在还没开始输入时出现，避免干扰正式使用 */}
+        {!input && !state.running && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+            <span style={{ fontSize: 11.5, color: 'var(--color-text-tertiary)', alignSelf: 'center' }}>
+              试一试：
+            </span>
+            {SAMPLES.map((s) => (
+              <button
+                key={s.label}
+                onClick={() => setInput(s.text)}
+                style={{
+                  padding: '3px 10px',
+                  fontSize: 12,
+                  borderRadius: 20,
+                  border: '0.5px solid var(--color-border-secondary)',
+                  background: 'var(--color-background-primary)',
+                  color: 'var(--color-text-secondary)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all var(--transition)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--accent-border)'
+                  e.currentTarget.style.color = 'var(--accent)'
+                  e.currentTarget.style.background = 'var(--accent-soft)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--color-border-secondary)'
+                  e.currentTarget.style.color = 'var(--color-text-secondary)'
+                  e.currentTarget.style.background = 'var(--color-background-primary)'
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {imagePreview && (
-          <div style={{ marginTop: 8, position: 'relative', display: 'inline-block' }}>
+          <div style={{ marginTop: 10, position: 'relative', display: 'inline-block' }}>
             <img
               src={imagePreview}
               alt="设备照片预览"
-              style={{ maxHeight: 110, borderRadius: 6, border: '0.5px solid var(--color-border-secondary)' }}
+              style={{
+                maxHeight: 110,
+                borderRadius: 'var(--radius-sm)',
+                border: '0.5px solid var(--color-border-secondary)',
+                boxShadow: 'var(--shadow-sm)',
+              }}
             />
             <button
               onClick={() => {
@@ -110,11 +197,12 @@ export function DiagnosePage() {
                 height: 20,
                 borderRadius: '50%',
                 border: 'none',
-                background: '#A32D2D',
+                background: 'var(--danger)',
                 color: '#fff',
                 fontSize: 12,
                 cursor: 'pointer',
                 lineHeight: 1,
+                boxShadow: 'var(--shadow-sm)',
               }}
             >
               ×
@@ -127,8 +215,8 @@ export function DiagnosePage() {
             display: 'flex',
             gap: 8,
             alignItems: 'center',
-            marginTop: 10,
-            paddingTop: 10,
+            marginTop: 12,
+            paddingTop: 12,
             borderTop: '0.5px solid var(--color-border-tertiary)',
           }}
         >
@@ -144,11 +232,11 @@ export function DiagnosePage() {
             disabled={state.running}
             style={btnStyle(false, state.running)}
           >
-            上传照片
+            ＋ 上传照片
           </button>
 
           {state.running ? (
-            <button onClick={abort} style={btnStyle(true, false, '#A32D2D')}>
+            <button onClick={abort} style={btnStyle(true, false, 'var(--danger)')}>
               中断诊断
             </button>
           ) : (
@@ -186,9 +274,13 @@ export function DiagnosePage() {
             marginBottom: 18,
             fontSize: 12,
             color: 'var(--color-text-secondary)',
+            background: 'var(--color-background-primary)',
+            border: '0.5px solid var(--color-border-tertiary)',
+            borderRadius: 'var(--radius-md)',
+            padding: '9px 12px',
           }}
         >
-          <summary style={{ cursor: 'pointer', marginBottom: 6 }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 500 }}>
             执行日志（{state.progressLog.length} 步）
           </summary>
           <div
@@ -196,8 +288,11 @@ export function DiagnosePage() {
               fontFamily: 'var(--font-mono)',
               lineHeight: 1.7,
               padding: '8px 10px',
-              background: 'var(--color-background-secondary)',
-              borderRadius: 6,
+              background: 'var(--color-background-tertiary)',
+              borderRadius: 'var(--radius-sm)',
+              marginTop: 8,
+              maxHeight: 260,
+              overflow: 'auto',
             }}
           >
             {state.progressLog.map((line, i) => (
@@ -210,12 +305,13 @@ export function DiagnosePage() {
       {/* 错误 */}
       {state.error && (
         <div
+          className="fs-banner fs-rise"
           style={{
-            padding: '10px 13px',
-            borderRadius: 8,
-            background: '#FCEBEB',
-            border: '0.5px solid #A32D2D',
-            color: '#791F1F',
+            padding: '11px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--danger-soft)',
+            border: '0.5px solid var(--danger)',
+            color: '#791f1f',
             fontSize: 13,
             lineHeight: 1.6,
             marginBottom: 16,
@@ -232,24 +328,28 @@ export function DiagnosePage() {
 
       {/* 结果 */}
       {state.result && (
-        <>
+        <div className="fs-rise">
           <ResultView result={state.result} />
           {workorderRecordId ? (
             <a
               href={workorderUrl(workorderRecordId)}
               download
               style={{
-                display: 'inline-block',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
                 marginTop: 6,
-                padding: '7px 14px',
-                borderRadius: 8,
-                background: '#534AB7',
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-md)',
+                background: 'linear-gradient(135deg, #6a60d0 0%, #4b3fa8 100%)',
                 color: '#fff',
                 fontSize: 13,
+                fontWeight: 500,
                 textDecoration: 'none',
+                boxShadow: '0 2px 8px rgba(83, 74, 183, 0.24)',
               }}
             >
-              下载工单（Markdown）
+              ↓ 下载工单（Markdown）
             </a>
           ) : (
             showWorkorderHint && (
@@ -258,7 +358,7 @@ export function DiagnosePage() {
               </p>
             )
           )}
-        </>
+        </div>
       )}
     </div>
   )

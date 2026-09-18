@@ -291,33 +291,45 @@ python build_knowledge_base.py
 ### 4. 启动
 
 ```bash
-# 前端（浏览器访问 http://localhost:8501）
-streamlit run app.py
+# 推荐：一键启动后端 + React 前端（Windows）
+启动全部.bat
+#   → 后端 http://127.0.0.1:8000/docs
+#   → 前端 http://127.0.0.1:5173
 
-# 或 API（访问 http://localhost:8000/docs）
-uvicorn api:app --host 0.0.0.0 --port 8000
+# 或分别启动
+启动后端.bat                # uvicorn api:app  :8000
+启动React前端.bat           # vite dev         :5173
 
 # 或命令行直接测试诊断流程
 python orchestrator.py
 ```
 
+> 旧的 Streamlit 前端（`启动前端.bat` / `streamlit run app.py`，:8501）已不再是
+> 日常入口——诊断页与历史页都已迁移到 React。仅在需要对照旧实现时启动。
+
 ---
 
 ## 六、局域网访问（让同事/其他人用）
 
-已配置 `.streamlit/config.toml`，`address = "0.0.0.0"` 让服务绑定所有网卡。
+React 前端默认只监听本机。要让同网段他人访问，需让 Vite 绑定所有网卡：
 
-1. 启动：`streamlit run app.py`
+1. 在 `web/` 下运行：`npm run dev -- --host 0.0.0.0`
 2. 查询本机 IP：`ipconfig`（找到 IPv4 地址，如 `192.168.2.48`）
-3. 同一 WiFi 下其他人访问：`http://192.168.2.48:8501`
+3. 同一 WiFi 下其他人访问：`http://192.168.2.48:5173`
+
+**注意端口与代理**：前端把 `/api` 代理到 `127.0.0.1:8000`，所以后端也要同时
+监听可被访问的地址（`uvicorn api:app --host 0.0.0.0 --port 8000`），否则页面
+能打开但诊断请求会失败。
 
 **首次可能被 Windows 防火墙拦截**，管理员 PowerShell 放行：
 
 ```powershell
-New-NetFirewallRule -DisplayName "Streamlit 8501" -Direction Inbound -LocalPort 8501 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "FlawScope 前端 5173" -Direction Inbound -LocalPort 5173 -Protocol TCP -Action Allow
+New-NetFirewallRule -DisplayName "FlawScope 后端 8000" -Direction Inbound -LocalPort 8000 -Protocol TCP -Action Allow
 ```
 
-> 想让**外网**访问：临时用内网穿透（`ngrok http 8501`），长期稳定用云服务器 + Docker。
+> 想让**外网**访问：临时用内网穿透（`ngrok http 5173`），长期稳定用云服务器 + Docker
+> （见 `docker-compose.yml`，自带 nginx 前端 8080）。
 
 ---
 

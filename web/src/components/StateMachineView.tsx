@@ -19,50 +19,106 @@ interface Props {
   running: boolean
 }
 
-const STATE_STYLE: Record<NodeState, { bg: string; border: string; text: string }> = {
-  pending: { bg: '#F1EFE8', border: '#D3D1C7', text: '#888780' },
-  active: { bg: '#E6F1FB', border: '#185FA5', text: '#042C53' },
-  done: { bg: '#E1F5EE', border: '#0F6E56', text: '#04342C' },
+const STATE_STYLE: Record<
+  NodeState,
+  { bg: string; border: string; text: string; dot: string }
+> = {
+  pending: { bg: '#FBFAF8', border: 'rgba(0,0,0,0.1)', text: '#9a9893', dot: '#d3d1c7' },
+  active: { bg: '#EAF2FC', border: '#185FA5', text: '#042C53', dot: '#185FA5' },
+  done: { bg: '#E9F6F1', border: 'rgba(15,110,86,0.28)', text: '#0b5345', dot: '#0F6E56' },
 }
 
 export function StateMachineView({ visited, active, debateRound, running }: Props) {
   const states = computeNodeStates(visited, active)
   const debateEntered = visited.has('review') || active === 'review'
+  const doneCount = NODES.filter((n) => states.get(n.id) === 'done').length
+  const pct = Math.round((doneCount / NODES.length) * 100)
 
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div
+      style={{
+        background: 'var(--color-background-primary)',
+        border: '1px solid var(--color-border-tertiary)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '14px 16px 16px',
+        marginBottom: 18,
+        boxShadow: 'var(--shadow-sm)',
+      }}
+    >
+      {/* 头部：标题 + 进度百分比 + 辩论状态 */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 10,
+          marginBottom: 12,
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)' }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--color-text-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <span
+            aria-hidden
+            style={{ width: 3, height: 13, borderRadius: 2, background: 'var(--accent)' }}
+          />
           诊断过程
+          <span style={{ fontSize: 11.5, fontWeight: 400, color: 'var(--color-text-tertiary)' }}>
+            {doneCount}/{NODES.length}
+          </span>
         </span>
-        <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
-          {debateEntered ? (
-            <>
-              辩论环已触发 · 第 <b>{debateRound || 1}</b> 轮
-            </>
-          ) : running ? (
-            '等待进入辩论环'
-          ) : (
-            ''
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {debateEntered && (
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: 'var(--warning)',
+                background: 'var(--warning-soft)',
+                padding: '2px 8px',
+                borderRadius: 20,
+              }}
+            >
+              辩论环第 {debateRound || 1} 轮
+            </span>
+          )}
+          {running && !debateEntered && (
+            <span style={{ fontSize: 11.5, color: 'var(--color-text-tertiary)' }}>
+              <span className="fs-dot" />进行中…
+            </span>
           )}
         </span>
       </div>
 
+      {/* 进度条：给整条链路一个总体完成度 */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 0,
-          flexWrap: 'wrap',
+          height: 3,
+          borderRadius: 2,
+          background: 'var(--color-background-tertiary)',
+          marginBottom: 14,
+          overflow: 'hidden',
         }}
       >
+        <div
+          style={{
+            width: `${pct}%`,
+            height: '100%',
+            borderRadius: 2,
+            background: 'linear-gradient(90deg, #6a60d0 0%, #0F6E56 100%)',
+            transition: 'width 0.4s ease',
+          }}
+        />
+      </div>
+
+      {/* 节点链 */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, flexWrap: 'wrap' }}>
         {NODES.map((node, i) => {
           const s = states.get(node.id) ?? 'pending'
           const style = STATE_STYLE[s]
@@ -72,32 +128,50 @@ export function StateMachineView({ visited, active, debateRound, running }: Prop
               <div
                 title={node.detail}
                 style={{
-                  minWidth: 78,
-                  padding: '7px 9px',
-                  borderRadius: 8,
+                  minWidth: 82,
+                  padding: '8px 10px',
+                  borderRadius: 'var(--radius-md)',
                   background: style.bg,
-                  border: `0.5px solid ${style.border}`,
+                  border: `1px solid ${style.border}`,
+                  borderWidth: isActive ? 1.5 : 1,
                   color: style.text,
                   fontSize: 12,
                   lineHeight: 1.35,
-                  transition: 'background 0.25s, border-color 0.25s',
-                  animation: isActive ? 'pulse 1.4s ease-in-out infinite' : undefined,
+                  transition: 'all 0.25s ease',
+                  animation: isActive ? 'fs-pulse 1.6s ease-out infinite' : undefined,
                   position: 'relative',
+                  boxShadow: s === 'done' ? 'none' : 'var(--shadow-sm)',
                 }}
               >
-                <div style={{ fontWeight: 500, whiteSpace: 'nowrap' }}>
-                  {node.index} {node.title}
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: style.dot,
+                      flexShrink: 0,
+                      boxShadow: isActive ? `0 0 0 2.5px ${style.dot}33` : 'none',
+                    }}
+                  />
+                  <span style={{ fontWeight: s === 'pending' ? 400 : 600 }}>
+                    {node.index} {node.title}
+                  </span>
                 </div>
                 {node.inDebateLoop && (
                   <div
                     style={{
                       position: 'absolute',
-                      top: 3,
-                      right: 4,
+                      top: 4,
+                      right: 5,
                       width: 5,
                       height: 5,
                       borderRadius: '50%',
                       background: debateEntered ? '#854F0B' : '#D3D1C7',
+                      transition: 'background 0.25s',
                     }}
                     title="属于辩论环"
                   />
@@ -106,10 +180,14 @@ export function StateMachineView({ visited, active, debateRound, running }: Prop
               {i < NODES.length - 1 && (
                 <div
                   style={{
-                    width: 14,
-                    height: 1.5,
-                    background: s === 'done' ? '#0F6E56' : '#D3D1C7',
-                    transition: 'background 0.25s',
+                    width: 16,
+                    height: 2,
+                    borderRadius: 1,
+                    background:
+                      s === 'done'
+                        ? 'linear-gradient(90deg, #0F6E56 0%, rgba(15,110,86,0.35) 100%)'
+                        : 'var(--color-background-tertiary)',
+                    transition: 'background 0.4s',
                   }}
                 />
               )}
@@ -122,15 +200,16 @@ export function StateMachineView({ visited, active, debateRound, running }: Prop
       {debateEntered && (
         <div
           style={{
-            marginTop: 8,
+            marginTop: 10,
             fontSize: 11,
-            color: '#854F0B',
+            color: 'var(--warning)',
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 7,
           }}
         >
           <span
+            aria-hidden
             style={{
               display: 'inline-block',
               width: 26,
@@ -145,12 +224,19 @@ export function StateMachineView({ visited, active, debateRound, running }: Prop
       )}
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.55; }
+        .fs-dot {
+          display: inline-block;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: #185FA5;
+          margin-right: 5px;
+          vertical-align: middle;
+          animation: fs-blink 1.2s ease-in-out infinite;
         }
-        @media (prefers-reduced-motion: reduce) {
-          * { animation: none !important; }
+        @keyframes fs-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.25; }
         }
       `}</style>
     </div>

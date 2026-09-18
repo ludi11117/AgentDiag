@@ -14,9 +14,9 @@ import { HistoryPage } from './pages/HistoryPage'
 
 type Route = 'diagnose' | 'history'
 
-const ROUTES: { key: Route; label: string }[] = [
-  { key: 'diagnose', label: '故障诊断' },
-  { key: 'history', label: '诊断历史' },
+const ROUTES: { key: Route; label: string; icon: string }[] = [
+  { key: 'diagnose', label: '故障诊断', icon: '◈' },
+  { key: 'history', label: '诊断历史', icon: '▤' },
 ]
 
 function parseHash(): Route {
@@ -47,24 +47,41 @@ export function App() {
           padding: '0 24px',
           display: 'flex',
           alignItems: 'center',
-          gap: 4,
+          gap: 2,
           position: 'sticky',
           top: 0,
-          background: 'var(--color-background-primary)',
+          background: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
           zIndex: 10,
         }}
       >
-        <span
-          style={{
-            fontSize: 13,
-            fontWeight: 500,
-            marginRight: 20,
-            padding: '13px 0',
-            color: 'var(--color-text-primary)',
-          }}
-        >
-          FlawScope
-        </span>
+        {/* 品牌标识：图标 + 名称 + 副标题 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginRight: 22 }}>
+          <span
+            aria-hidden
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 7,
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 14,
+              color: '#fff',
+              background: 'linear-gradient(135deg, #6a60d0 0%, #4b3fa8 100%)',
+              boxShadow: '0 2px 6px rgba(83, 74, 183, 0.28)',
+            }}
+          >
+            ⌬
+          </span>
+          <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: 0.2 }}>FlawScope</span>
+            <span style={{ fontSize: 10.5, color: 'var(--color-text-tertiary)', letterSpacing: 0.3 }}>
+              多智能体故障诊断
+            </span>
+          </span>
+        </div>
+
         {ROUTES.map((r) => {
           const active = route === r.key
           return (
@@ -72,38 +89,69 @@ export function App() {
               key={r.key}
               onClick={() => go(r.key)}
               style={{
-                padding: '13px 12px',
+                padding: '13px 13px',
                 fontSize: 13,
                 border: 'none',
                 background: 'transparent',
                 cursor: 'pointer',
-                color: active ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                fontWeight: active ? 500 : 400,
+                color: active ? 'var(--accent)' : 'var(--color-text-secondary)',
+                fontWeight: active ? 600 : 400,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
                 // 用下边框而不是背景色做选中态：这个位置背景色会显得很重
-                borderBottom: active ? '2px solid #534AB7' : '2px solid transparent',
+                borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent',
                 fontFamily: 'inherit',
+                transition: 'color var(--transition), border-color var(--transition)',
               }}
             >
+              <span aria-hidden style={{ fontSize: 11, opacity: active ? 1 : 0.7 }}>
+                {r.icon}
+              </span>
               {r.label}
             </button>
           )
         })}
-        <a
-          href="/api/docs"
-          target="_blank"
-          rel="noreferrer"
+
+        {/* 运行状态点：让"后端是否活着"一眼可见 */}
+        <span
           style={{
             marginLeft: 'auto',
-            fontSize: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 11.5,
             color: 'var(--color-text-tertiary)',
-            textDecoration: 'none',
           }}
         >
-          API 文档
-        </a>
+          <span
+            aria-hidden
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: 'var(--success)',
+              boxShadow: '0 0 0 3px rgba(15, 110, 86, 0.12)',
+            }}
+          />
+          <a
+            href="/api/docs"
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              color: 'var(--color-text-tertiary)',
+              textDecoration: 'none',
+              borderBottom: '1px dotted var(--color-border-secondary)',
+            }}
+          >
+            API 文档
+          </a>
+        </span>
       </nav>
 
-      {route === 'diagnose' ? <DiagnosePage /> : <HistoryPage />}
+      <main key={route} className="fs-rise">
+        {route === 'diagnose' ? <DiagnosePage /> : <HistoryPage />}
+      </main>
     </div>
   )
 }

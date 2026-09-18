@@ -1,24 +1,53 @@
 /**
- * 全局样式。
+ * 全局样式与设计令牌。
  *
  * 刻意不引入 Tailwind / UI 组件库：这个项目要展示的是"我理解布局与状态渲染"，
  * 而不是"我会用某个组件库"。样式集中用 CSS 变量声明，主题切换只改变量即可。
  *
  * 颜色语义与后端状态口径对齐（见 ResultView 的 STATUS_META）：
  *   绿 = 正常完成 / 琥珀 = 降级或待确认 / 红 = 失败或需人工介入
+ *   靛蓝（accent）= 主色，用于品牌、选中态、主按钮
  */
 
 :root {
+  /* ---- 中性色阶 ---- */
   --color-background-primary: #ffffff;
-  --color-background-secondary: #f7f7f5;
-  --color-text-primary: #1f1f1e;
-  --color-text-secondary: #6b6a66;
+  --color-background-secondary: #f8f8f6;
+  --color-background-tertiary: #f1f0ec;
+  --color-text-primary: #1c1c1a;
+  --color-text-secondary: #66655f;
   --color-text-tertiary: #9a9893;
-  --color-border-tertiary: rgba(0, 0, 0, 0.12);
-  --color-border-secondary: rgba(0, 0, 0, 0.24);
+  --color-border-tertiary: rgba(0, 0, 0, 0.1);
+  --color-border-secondary: rgba(0, 0, 0, 0.2);
+
+  /* ---- 品牌主色（靛蓝）---- */
+  --accent: #534ab7;
+  --accent-hover: #453da0;
+  --accent-soft: #eeecfa;
+  --accent-border: #c8c3ea;
+
+  /* ---- 语义色 ---- */
+  --success: #0f6e56;
+  --success-soft: #e3f5ee;
+  --warning: #854f0b;
+  --warning-soft: #fdf0da;
+  --danger: #a32d2d;
+  --danger-soft: #fcecec;
+
+  /* ---- 排版 ---- */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei',
     'Hiragino Sans GB', sans-serif;
   --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+
+  /* ---- 圆角与阴影（统一梯度，避免各处随意取值）---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  --transition: 0.18s ease;
 }
 
 * {
@@ -32,12 +61,18 @@ body {
 }
 
 body {
-  background: var(--color-background-primary);
+  /* 极淡的双层径向渐变，让整页不再是死白一片 */
+  background:
+    radial-gradient(1200px 500px at 15% -10%, rgba(83, 74, 183, 0.05), transparent 60%),
+    radial-gradient(900px 400px at 90% 0%, rgba(15, 110, 86, 0.04), transparent 55%),
+    var(--color-background-secondary);
+  background-attachment: fixed;
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
 button {
@@ -46,6 +81,96 @@ button {
 
 /* 可访问性：键盘导航时焦点可见（鼠标点击不显示外框） */
 :focus-visible {
-  outline: 2px solid #534ab7;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ---- 复用类：卡片容器 ---- */
+.fs-card {
+  background: var(--color-background-primary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 状态横幅左侧色条 + 轻微渐变，让降级/失败一眼可辨又不刺眼 */
+.fs-banner {
+  position: relative;
+  overflow: hidden;
+}
+.fs-banner::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: currentColor;
+  opacity: 0.75;
+}
+
+/* 结果区卡片入场动画：诊断完成后逐块浮现，而不是整页瞬间跳变 */
+@keyframes fs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fs-rise {
+  animation: fs-rise 0.28s ease both;
+}
+
+/* 进行中节点的呼吸灯 */
+@keyframes fs-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(24, 95, 165, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(24, 95, 165, 0);
+  }
+}
+
+/* 数字滚动/切换时的轻微高亮 */
+@keyframes fs-flash {
+  0% {
+    background: var(--accent-soft);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* 滚动条：默认的太粗太亮，收细一点 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
