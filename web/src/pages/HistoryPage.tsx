@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { listRecords, deleteRecord, workorderUrl, ApiError } from '../api/client'
 import type { Diagnosis, DiagnosisRecord, RecordListResponse, WorkOrder } from '../types/contracts'
+import { btnStyle } from '../ui/button'
 import {
   pageWindow,
   historySummary,
@@ -426,16 +427,3 @@ const selectStyle = {
   fontFamily: 'inherit',
 } as const
 
-function btnStyle(primary: boolean, disabled: boolean, overrideColor?: string) {
-  return {
-    padding: '7px 13px',
-    borderRadius: 8,
-    fontSize: 13,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.45 : 1,
-    border: primary ? 'none' : '0.5px solid var(--color-border-secondary)',
-    background: overrideColor ?? (primary ? '#534AB7' : 'transparent'),
-    color: primary ? '#fff' : overrideColor ?? 'var(--color-text-primary)',
-    fontFamily: 'inherit',
-  } as const
-}

@@ -11,6 +11,7 @@ import { useDiagnosisStream } from '../hooks/useDiagnosisStream'
 import { StateMachineView } from '../components/StateMachineView'
 import { ResultView } from '../components/ResultView'
 import { workorderUrl } from '../api/client'
+import { btnStyle } from '../ui/button'
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024
 
@@ -262,21 +263,6 @@ export function DiagnosePage() {
     </div>
   )
 }
-
-function btnStyle(primary: boolean, disabled: boolean, overrideColor?: string) {
-  return {
-    padding: '7px 14px',
-    borderRadius: 8,
-    fontSize: 13,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.45 : 1,
-    border: primary ? 'none' : '0.5px solid var(--color-border-secondary)',
-    background: overrideColor ?? (primary ? '#534AB7' : 'transparent'),
-    color: primary ? '#fff' : 'var(--color-text-primary)',
-    transition: 'opacity 0.15s',
-  } as const
-}
-
 /** 把图片压到最长边 1280px、JPEG 质量 0.85，避免 base64 超限。 */
 async function compressImage(file: File): Promise<{ dataUrl: string; base64: string }> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
