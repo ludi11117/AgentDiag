@@ -22,6 +22,11 @@ from workorder_export import workorder_to_markdown, workorder_filename
 
 logger = get_logger(__name__)
 
+# 接口层版本号的**唯一来源**。FastAPI 元数据、/health、/health/live、/ 四处都要用它，
+# 别写死字符串：本次改造时只改了 FastAPI 那一处，导致 /health/live 一直谎报旧版本，
+# 而这种不一致在"探活只返回 200 就算过"的部署脚本里根本看不出来。
+API_VERSION = "1.3.0"
+
 # 健康检查结果缓存（TTL 由 settings.HEALTH_CACHE_TTL 控制）
 _health_cache: Dict[str, Any] = {"ts": 0.0, "payload": None}
 
@@ -64,7 +69,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="FlawScope API",
     description="多智能体工业故障诊断系统接口",
-    version="1.3.0",
+    version=API_VERSION,
     lifespan=lifespan
 )
 
@@ -121,7 +126,7 @@ class RecordResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     components: Dict[str, Any]
-    version: str = "1.2.0"
+    version: str = API_VERSION
 
 
 @app.post("/diagnose", response_model=DiagnosisResponse)
@@ -370,7 +375,7 @@ def stats(_: None = Depends(require_api_key)):
 def health_live():
     """存活探针：只确认进程还在，不触碰任何外部依赖，毫秒级返回。
     编排层的 livenessProbe 应该用这个，避免把"上游抖动"误判成"进程该重启"。"""
-    return {"status": "alive", "version": "1.2.0"}
+    return {"status": "alive", "version": API_VERSION}
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -464,7 +469,7 @@ def _collect_health() -> dict:
 def root():
     return {
         "name": "FlawScope API",
-        "version": "1.2.0",
+        "version": API_VERSION,
         "docs": "/docs",
         "health": "/health"
     }

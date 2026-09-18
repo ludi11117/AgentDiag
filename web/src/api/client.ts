@@ -13,6 +13,7 @@ import type {
   DiagnosisRecord,
   Stats,
 } from '../types/contracts'
+import { splitSSEBuffer, parseSSEBlock } from './sse'
 
 const BASE = '/api'
 
@@ -183,10 +184,10 @@ export function diagnoseStream(
         if (done) break
         buffer += decoder.decode(value, { stream: true })
 
-        // 以空行分隔消息；最后一段可能不完整，留在 buffer 里等下一个 chunk
-        const blocks = buffer.split('\n\n')
-        buffer = blocks.pop() ?? ''
-
+        // 用可测的纯函数切分：一个消息可能跨 chunk，一个 chunk 也可能含多条消息。
+        // 最后一段可能被切断，留在 buffer 里等下一个 chunk（见 splitSSEBuffer 的说明）。
+        const { blocks, rest } = splitSSEBuffer(buffer)
+        buffer = rest
         for (const block of blocks) {
           dispatchSSEBlock(block, handlers)
         }
@@ -205,32 +206,19 @@ export function diagnoseStream(
 }
 
 function dispatchSSEBlock(block: string, handlers: StreamHandlers): void {
-  let eventName = ''
-  const dataLines: string[] = []
-
-  for (const rawLine of block.split('\n')) {
-    const line = rawLine.trimEnd()
-    if (!line || line.startsWith(':')) continue // 空行与注释（心跳包）
-    if (line.startsWith('event:')) {
-      eventName = line.slice(6).trim()
-    } else if (line.startsWith('data:')) {
-      // SSE 规范允许多行 data，需拼接而非覆盖
-      dataLines.push(line.slice(5).trimStart())
-    }
-  }
-
-  if (!eventName || dataLines.length === 0) return
+  const parsed = parseSSEBlock(block)
+  if (!parsed) return
 
   let payload: unknown
   try {
-    payload = JSON.parse(dataLines.join('\n'))
+    payload = JSON.parse(parsed.data)
   } catch {
     // 单条消息解析失败不应终止整个流，但必须让调用方知道
-    handlers.onError?.(`无法解析服务端事件（${eventName}）`)
+    handlers.onError?.(`无法解析服务端事件（${parsed.event}）`)
     return
   }
 
-  switch (eventName) {
+  switch (parsed.event) {
     case 'progress':
       handlers.onProgress?.(payload as ProgressEvent)
       break

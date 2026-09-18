@@ -124,10 +124,17 @@ export interface TokenUsage {
 export interface DiagnosisResult {
   status: DiagnosisStatus
   followup_question: string
-  diagnosis: Diagnosis | Record<string, never>
-  review: Review | Record<string, never>
-  rebuttal: Rebuttal | Record<string, never>
-  final_review: FinalReview | Record<string, never>
+  /**
+   * 这四个字段在降级轮次里是 **`{}`**（空对象）而不是缺失，所以不能简单标成
+   * `Diagnosis | undefined`——那样读取 `dg.根因判断` 会被 TS 判定为
+   * "property does not exist on type '{}'"。
+   * 用 `Partial<...>` 才是对真实形状的准确描述：字段可能存在，也可能整体缺席，
+   * 调用方必须自行兜底（UI 侧的做法是"没有就当作空"，不是补占位文案）。
+   */
+  diagnosis: Partial<Diagnosis>
+  review: Partial<Review>
+  rebuttal: Partial<Rebuttal>
+  final_review: Partial<FinalReview>
   cost: Cost
   workorder: WorkOrder
   debate_round: number
@@ -179,16 +186,31 @@ export interface RecordListResponse {
   records: DiagnosisRecord[]
 }
 
+/**
+ * 契约来源：database.py :: get_records()（`SELECT *`，字段即表列名）+ 反向代理到
+ * api.py :: RecordResponse.records。
+ *
+ * 注意字段名是 **`fault_description`** 而不是 `user_input`——
+ * 表列名与 `api.py :: DiagnosisRequest` 同名，但不叫 `user_input`。
+ * JSON 类列（diagnosis/cost/workorder/...）在 database._parse_json_columns() 里
+ * 已反解析为 dict，降级轮次可能整体缺失或为空对象，因此一律可选。
+ */
 export interface DiagnosisRecord {
   id: number
-  user_input: string
+  /** 表列名，非 `user_input`。历史页展示的"故障描述"就是它。 */
+  fault_description: string
   status: string
-  correlation_id?: string
   created_at?: string
+  correlation_id?: string
   diagnosis?: Diagnosis
+  review?: Review
+  rebuttal?: Rebuttal
+  final_review?: FinalReview
   cost?: Cost
   workorder?: WorkOrder
+  debate_round?: number
   token_usage?: TokenUsage
+  total_tokens?: number
 }
 
 /** 契约来源：database.get_stats() */

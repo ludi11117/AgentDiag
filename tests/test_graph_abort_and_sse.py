@@ -414,3 +414,43 @@ def test_recursion_error_produces_abort_workorder(monkeypatch):
 
     assert result["workorder"]["工单编号"].endswith("-ABORT")
     assert "GraphRecursionError" in result["workorder"]["风险说明"]
+
+
+# ---------------------------------------------------------------------------
+# 第六组：版本号只有一处定义
+# ---------------------------------------------------------------------------
+# 背景：本次全栈改造把 FastAPI 的 version 从 1.2.0 提到 1.3.0，但 /health、
+# /health/live、/ 三处各自硬编码了 "1.2.0"，谁都没报错——探活只看 HTTP 200，
+# 版本号漂移在部署脚本里完全不可见。收口成 API_VERSION 之后，这条测试负责
+# 保证它不再散开：任何一处重新写死字符串就会红。
+
+
+def test_api_version_is_defined_once():
+    """接口层只允许存在一个版本号字面量。"""
+    import re
+    from pathlib import Path
+
+    src = Path(api.__file__).read_text(encoding="utf-8")
+    # 捕获引号**内部**的内容：用捕获组而不是整段匹配，
+    # 否则拿到的字面量自带引号，与 API_VERSION 永远不相等，
+    # 这条测试就成了"无论如何都红"的假护栏。
+    literals = re.findall(r'"(\d+\.\d+\.\d+)"', src)
+
+    assert literals == [api.API_VERSION], (
+        f"接口层出现了多余的版本号字面量：{literals}。"
+        "请统一使用 API_VERSION，不要就地写死字符串。"
+    )
+
+
+def test_all_version_endpoints_agree():
+    """四处对外暴露的版本号必须一致，且等于 API_VERSION。"""
+    from fastapi.testclient import TestClient
+
+    expected = api.API_VERSION
+    client = TestClient(api.app)
+
+    assert client.get("/health/live").json()["version"] == expected
+    assert client.get("/").json()["version"] == expected
+    assert api.app.version == expected
+    # HealthResponse 的默认值也要跟着走，否则 /health 在未显式传 version 时又会漂
+    assert api.HealthResponse(status="healthy", components={}).version == expected

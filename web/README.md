@@ -30,20 +30,46 @@ Vite 会把 `/api/*` 代理到 `http://127.0.0.1:8000`，因此**不需要**在�
 | `npm run build` | 类型检查 + 生产构建 → `dist/` |
 | `npm run preview` | 预览构建产物 |
 | `npm run typecheck` | 只做类型检查，不产出文件 |
+| `npm test` | 跑单元测试（单次） |
+| `npm run test:watch` | 单元测试 watch 模式 |
 
 ## 目录结构
 
 ```
 src/
-  api/client.ts            # HTTP 客户端 + SSE 解析（本项目最有含量的一块）
+  api/
+    client.ts              # HTTP 客户端（含 SSE 订阅）
+    sse.ts                 # SSE 字节流解析（纯函数，单独抽出以便测试）
   types/contracts.ts       # 与后端 Pydantic 对齐的类型，逐字段标注契约来源
   state/machine.ts         # 9 节点状态机的前端镜像，用于进度可视化
   hooks/useDiagnosisStream.ts  # 诊断流程状态管理（useReducer）
   components/
     StateMachineView.tsx   # 状态机 + 辩论环可视化
     ResultView.tsx         # 结果渲染（严格按"没有的字段就不渲染"）
-  pages/DiagnosePage.tsx   # 诊断页
+  pages/
+    DiagnosePage.tsx       # 诊断页
+    HistoryPage.tsx        # 历史页
+    historyUtils.ts        # 历史页的纯逻辑（分页夹取 / 状态配色 / CSV 序列化）
+  App.tsx                  # hash 路由外壳
 ```
+
+## 单元测试
+
+62 项，全部离线、不依赖后端：
+
+| 文件 | 项数 | 覆盖什么 |
+|---|---|---|
+| `api/sse.test.ts` | 18 | 跨 chunk 分片、多行 data、注释心跳、半截消息 |
+| `state/machine.test.ts` | 17 | 节点映射（含"不该映射"的反向用例）、状态归约 |
+| `pages/historyUtils.test.ts` | 27 | 分页夹取与 `clamped` 信号、CSV 注入防护、时间格式化 |
+
+两个刻意的组织决定：
+
+1. **把纯逻辑抽成独立模块**（`api/sse.ts`、`pages/historyUtils.ts`），
+   而不是塞在组件里。组件只负责渲染，逻辑能被直接测——这不是为了凑测试数量，
+   `pageWindow` 的 `clamped` 恒假 bug 就是抽出来之后才被测到的。
+2. **每个"该拦的"都配"该放的"**。比如 `nodeFromLabel` 既测"转人工→human_review"，
+   也测"随便一句话→null"。只测前者的话，实现退化成"永远返回第一个节点"也能通过。
 
 ## 几个刻意的技术选择
 
@@ -82,8 +108,8 @@ src/
 
 ## 已知限制
 
-- 本次只切入**诊断页**；历史页与统计页仍由 Streamlit 提供（8501）。
-  接口（`/records`、`/stats`）已就绪，迁移是纯前端工作。
+- 本次迁移了**诊断页与历史页**；统计页仍由 Streamlit 提供（8501）。
+  接口（`/stats`）已就绪，迁移是纯前端工作。
+- 路由是极简的 hash 路由（`#/diagnose`、`#/history`），没引 react-router。
+  两个页面不值得为它加一个依赖。
 - 移动端适配只做了基础响应式，未针对触屏优化。
-- 无单元测试。SSE 解析与状态归约是纯函数，适合补测试；
-  当前依赖后端侧的 `tests/test_graph_abort_and_sse.py` 覆盖接口契约。
