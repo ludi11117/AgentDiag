@@ -1,0 +1,9 @@
+node_modules
+dist
+.vite
+*.log
+.env.local
+.env.*.local
+
+# Docker 构建时不需要把宿主机已装的依赖拷进去（阶段一会自己装）
+npm-debug.log*

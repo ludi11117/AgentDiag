@@ -12,9 +12,12 @@ services:
       #   ② WAL 模式会生成 -wal / -shm 伴生文件，单文件挂载留不住它们，
       #      重启后可能丢事务，极端情况下还会损坏库文件。
       - DB_PATH=/app/data/diagnosis_history.db
+      # 前端经 nginx 同源访问，但直连 API 的场景（本地调试前端 dev server）仍需放行。
+      # 生产部署时把实际前端域名加进这个列表。
+      - CORS_ALLOW_ORIGINS=["http://localhost:5173","http://localhost:8080"]
     ports:
-      - "8000:8000"   # FastAPI
-      - "8501:8501"   # Streamlit
+      - "8000:8000"   # FastAPI（前端反代与直连调试）
+      - "8501:8501"   # Streamlit（历史页与统计页暂留）
     volumes:
       - ./chroma_db:/app/chroma_db   # 向量库（需先在宿主机执行 build_knowledge_base.py）
       - ./data:/app/data             # 知识库原文 + SQLite 诊断历史
@@ -27,3 +30,23 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+
+  # React 前端：构建静态产物后用 nginx 托管，并把 /api 反代到 flawscope:8000。
+  # 与上面的服务同网络，通过服务名 flawscope 互访。
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: flawscope-web
+    restart: unless-stopped
+    depends_on:
+      - flawscope
+    ports:
+      - "8080:80"     # 浏览器访问入口
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
